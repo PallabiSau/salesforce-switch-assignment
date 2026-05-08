@@ -47,9 +47,13 @@ app.get("/oauth/callback", async (req, res) => {
     await conn.authorize(code);
 
     sfAuth = {
-      accessToken: conn.accessToken,
-      instanceUrl: conn.instanceUrl,
-    };
+  accessToken: conn.accessToken,
+  refreshToken: conn.refreshToken,
+  instanceUrl: conn.instanceUrl,
+};
+
+console.log("Salesforce connected successfully");
+console.log(sfAuth);
 
     res.send("Salesforce Connected Successfully");
   } catch (error) {
@@ -62,8 +66,10 @@ const getSalesforceConnection = () => {
   if (!sfAuth) return null;
 
   return new jsforce.Connection({
+    oauth2,
     instanceUrl: sfAuth.instanceUrl,
     accessToken: sfAuth.accessToken,
+    refreshToken: sfAuth.refreshToken,
   });
 };
 
