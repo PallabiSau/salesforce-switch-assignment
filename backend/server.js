@@ -24,6 +24,7 @@ const oauth2 = new jsforce.OAuth2({
 });
 
 let conn;
+let sfAuth = null;
 
 app.get("/", (req, res) => {
   res.send("Salesforce Backend Running");
@@ -42,7 +43,13 @@ app.get("/oauth/callback", async (req, res) => {
     const { code } = req.query;
 
     conn = new jsforce.Connection({ oauth2 });
+
     await conn.authorize(code);
+
+    sfAuth = {
+      accessToken: conn.accessToken,
+      instanceUrl: conn.instanceUrl,
+    };
 
     res.send("Salesforce Connected Successfully");
   } catch (error) {
@@ -51,8 +58,19 @@ app.get("/oauth/callback", async (req, res) => {
   }
 });
 
+const getSalesforceConnection = () => {
+  if (!sfAuth) return null;
+
+  return new jsforce.Connection({
+    instanceUrl: sfAuth.instanceUrl,
+    accessToken: sfAuth.accessToken,
+  });
+};
+
 app.get("/api/status", async (req, res) => {
   try {
+    conn = getSalesforceConnection();
+
     if (!conn) {
       return res.json({ connected: false });
     }
@@ -70,6 +88,8 @@ app.get("/api/status", async (req, res) => {
 
 app.get("/api/validation-rules", async (req, res) => {
   try {
+    conn = getSalesforceConnection();
+
     if (!conn) {
       return res.status(401).json({
         success: false,
@@ -99,6 +119,8 @@ app.get("/api/validation-rules", async (req, res) => {
 });
 
 const updateValidationRuleStatus = async (id, active) => {
+  conn = getSalesforceConnection();
+
   const result = await conn.tooling.query(`
     SELECT Id, ValidationName, Active, ErrorMessage, ValidationFormula
     FROM ValidationRule
@@ -122,6 +144,8 @@ app.patch("/api/toggle-rule/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { active } = req.body;
+
+    conn = getSalesforceConnection();
 
     if (!conn) {
       return res.status(401).json({
@@ -149,6 +173,8 @@ app.patch("/api/toggle-rule/:id", async (req, res) => {
 
 app.patch("/api/enable-all", async (req, res) => {
   try {
+    conn = getSalesforceConnection();
+
     if (!conn) {
       return res.status(401).json({
         success: false,
@@ -183,6 +209,8 @@ app.patch("/api/enable-all", async (req, res) => {
 
 app.patch("/api/disable-all", async (req, res) => {
   try {
+    conn = getSalesforceConnection();
+
     if (!conn) {
       return res.status(401).json({
         success: false,
