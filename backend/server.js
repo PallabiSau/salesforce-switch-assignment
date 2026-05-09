@@ -97,7 +97,7 @@ app.get("/oauth/callback", async (req, res) => {
 
     console.log("Salesforce connected successfully");
 
-    res.redirect(process.env.FRONTEND_URL);
+   res.redirect(`${process.env.FRONTEND_URL}?connected=true`);
   } catch (error) {
     console.log("OAuth Error:", error);
     res.send("Connection Failed");

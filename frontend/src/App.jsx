@@ -41,21 +41,14 @@ function App() {
   };
 
   
-useEffect(() => {
-  const checkConnection = async () => {
-    try {
-      const res = await axios.get(`${backendUrl}/api/status`);
 
-      if (res.data.connected) {
-        setConnected(true);
-        setMessage("Connected Successfully to Salesforce");
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
+  useEffect(() => {
+  const query = new URLSearchParams(window.location.search);
 
-  checkConnection();
+  if (query.get("connected") === "true") {
+    setConnected(true);
+    setMessage("Connected Successfully to Salesforce");
+  }
 }, []);
 
 
