@@ -20,6 +20,7 @@ h1 {
   margin: 0 0 30px;
   font-size: clamp(32px, 7vw, 52px);
   line-height: 1.15;
+  color: white;
 }
 
 .buttonGroup {
