@@ -1,8 +1,27 @@
 import { useState } from "react";
 import axios from "axios";
 import "./App.css";
+import { useState, useEffect } from "react";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
+const [connected, setConnected] = useState(false);
+
+useEffect(() => {
+  const checkConnection = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/status`);
+
+      if (res.data.connected) {
+        setConnected(true);
+        setMessage("Connected Successfully to Salesforce");
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  checkConnection();
+}, []);
 
 function App() {
   const [rules, setRules] = useState([]);
@@ -46,6 +65,22 @@ function App() {
   return (
     <div className="page">
       <h1>Salesforce Validation Rules</h1>
+
+      {connected && (
+  <div
+    style={{
+      backgroundColor: "#16a34a",
+      color: "white",
+      padding: "12px",
+      borderRadius: "8px",
+      marginBottom: "20px",
+      textAlign: "center",
+      fontWeight: "bold",
+    }}
+  >
+    Connected Successfully to Salesforce
+  </div>
+)}
 
       <div className="buttonGroup">
         <button className="btn blue" onClick={connectSalesforce}>
