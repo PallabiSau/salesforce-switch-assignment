@@ -1,31 +1,13 @@
-import { useState } from "react";
 import axios from "axios";
 import "./App.css";
 import { useState, useEffect } from "react";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
-const [connected, setConnected] = useState(false);
-
-useEffect(() => {
-  const checkConnection = async () => {
-    try {
-      const res = await axios.get(`${backendUrl}/api/status`);
-
-      if (res.data.connected) {
-        setConnected(true);
-        setMessage("Connected Successfully to Salesforce");
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  checkConnection();
-}, []);
 
 function App() {
   const [rules, setRules] = useState([]);
   const [message, setMessage] = useState("");
+  const [connected, setConnected] = useState(false);
 
   const connectSalesforce = () => {
     window.location.href = `${backendUrl}/auth/login`;
@@ -57,6 +39,25 @@ function App() {
     await axios.patch(`${backendUrl}/api/disable-all`);
     await getValidationRules();
   };
+
+  
+useEffect(() => {
+  const checkConnection = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/status`);
+
+      if (res.data.connected) {
+        setConnected(true);
+        setMessage("Connected Successfully to Salesforce");
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  checkConnection();
+}, []);
+
 
   const deployChanges = () => {
     setMessage("Changes deployed successfully to Salesforce");
