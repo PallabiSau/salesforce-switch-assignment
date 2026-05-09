@@ -20,6 +20,12 @@ const getConn = () => {
   return new jsforce.Connection({
     instanceUrl: sfAuth.instanceUrl,
     accessToken: sfAuth.accessToken,
+    oauth2: {
+      loginUrl: process.env.SF_LOGIN_URL,
+      clientId: process.env.SALESFORCE_CLIENT_ID,
+      clientSecret: process.env.SALESFORCE_CLIENT_SECRET,
+      redirectUri: process.env.SALESFORCE_CALLBACK_URL,
+    },
     refreshToken: sfAuth.refreshToken,
   });
 };
