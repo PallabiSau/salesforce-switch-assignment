@@ -168,21 +168,24 @@ const updateValidationRuleStatus = async (id, active) => {
     SELECT Id,
            ValidationName,
            ErrorMessage,
-           ValidationFormula
+           ValidationFormula,
+           EntityDefinitionId
     FROM ValidationRule
     WHERE Id = '${id}'
   `);
 
   const rule = result.records[0];
 
+  const metadata = {
+    fullName: `Account.${rule.ValidationName}`,
+    active: active,
+    errorConditionFormula: rule.ValidationFormula,
+    errorMessage: rule.ErrorMessage,
+  };
+
   await conn.tooling.sobject("ValidationRule").update({
     Id: id,
-    Metadata: {
-      active,
-      validationName: rule.ValidationName,
-      errorMessage: rule.ErrorMessage,
-      validationFormula: rule.ValidationFormula,
-    },
+    Metadata: metadata,
   });
 };
 
