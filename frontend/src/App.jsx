@@ -6,202 +6,98 @@ const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 function App() {
   const [rules, setRules] = useState([]);
+  const [message, setMessage] = useState("");
 
   const connectSalesforce = () => {
     window.location.href = `${backendUrl}/auth/login`;
   };
 
   const getValidationRules = async () => {
-    const res = await axios.get(`${backendUrl}/api/validation-rules`);
-    setRules(res.data.rules);
+    try {
+      const res = await axios.get(`${backendUrl}/api/validation-rules`);
+      setRules(res.data.rules || []);
+      setMessage("Validation rules loaded successfully");
+    } catch (error) {
+      setMessage("Please login with Salesforce first");
+    }
   };
 
   const toggleRule = async (id, currentStatus) => {
     await axios.patch(`${backendUrl}/api/toggle-rule/${id}`, {
       active: !currentStatus,
     });
-
-    getValidationRules();
+    await getValidationRules();
   };
 
   const enableAllRules = async () => {
-  await axios.patch(`${backendUrl}/api/enable-all`);
-  getValidationRules();
-};
+    await axios.patch(`${backendUrl}/api/enable-all`);
+    await getValidationRules();
+  };
 
-const disableAllRules = async () => {
-  await axios.patch(`${backendUrl}/api/disable-all`);
-  getValidationRules();
-};
-const deployChanges = () => {
-  alert("Changes deployed successfully to Salesforce");
-};
+  const disableAllRules = async () => {
+    await axios.patch(`${backendUrl}/api/disable-all`);
+    await getValidationRules();
+  };
+
+  const deployChanges = () => {
+    setMessage("Changes deployed successfully to Salesforce");
+  };
+
   return (
-    <div
-      style={{
-        padding: "40px",
-        fontFamily: "Arial",
-        backgroundColor: "#0f172a",
-        minHeight: "100vh",
-        color: "white",
-      }}
-    >
-      <h1
-        style={{
-          textAlign: "center",
-          marginBottom: "30px",
-          fontSize: "42px",
-        }}
-      >
-        Salesforce Validation Rules
-      </h1>
+    <div className="page">
+      <h1>Salesforce Validation Rules</h1>
 
-      <div
-        style={{
-          marginBottom: "30px",
-          display: "flex",
-          gap: "15px",
-          flexWrap: "wrap",
-          justifyContent: "center",
-        }}
-      >
-        <button
-          onClick={connectSalesforce}
-          style={{
-            backgroundColor: "#0176d3",
-            color: "white",
-            border: "none",
-            padding: "12px 20px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            fontSize: "15px",
-          }}
-        >
+      <div className="buttonGroup">
+        <button className="btn blue" onClick={connectSalesforce}>
           Login with Salesforce
         </button>
 
-        <button
-          onClick={getValidationRules}
-          style={{
-            backgroundColor: "#7b61ff",
-            color: "white",
-            border: "none",
-            padding: "12px 20px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            fontSize: "15px",
-          }}
-        >
+        <button className="btn purple" onClick={getValidationRules}>
           Get Validation Rules
         </button>
 
-        <button
-          onClick={enableAllRules}
-          style={{
-            backgroundColor: "#28a745",
-            color: "white",
-            border: "none",
-            padding: "12px 20px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            fontSize: "15px",
-          }}
-        >
+        <button className="btn green" onClick={enableAllRules}>
           Enable All
         </button>
 
-        <button
-          onClick={disableAllRules}
-          style={{
-            backgroundColor: "#dc3545",
-            color: "white",
-            border: "none",
-            padding: "12px 20px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            fontSize: "15px",
-          }}
-        >
+        <button className="btn red" onClick={disableAllRules}>
           Disable All
         </button>
-      </div>
-      <button
-  onClick={deployChanges}
-  style={{
-    backgroundColor: "#f59e0b",
-    color: "white",
-    border: "none",
-    padding: "12px 20px",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    fontSize: "15px",
-  }}
->
-  Deploy Changes
-</button>
 
-      <div style={{ marginTop: "30px" }}>
+        <button className="btn orange" onClick={deployChanges}>
+          Deploy Changes
+        </button>
+      </div>
+
+      {message && <p className="message">{message}</p>}
+
+      <div className="rules">
         {rules.map((rule) => (
-          <div
-            key={rule.Id}
-            style={{
-              border: "1px solid #333",
-              padding: "20px",
-              marginBottom: "20px",
-              borderRadius: "12px",
-              backgroundColor: "#111827",
-              color: "white",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-            }}
-          >
-            <h2
-              style={{
-                marginBottom: "15px",
-                color: "#60a5fa",
-              }}
-            >
-              {rule.ValidationName}
-            </h2>
+          <div className="card" key={rule.Id}>
+            <h2>{rule.ValidationName}</h2>
 
             <p>
               <strong>Object:</strong>{" "}
-              {rule.EntityDefinition.QualifiedApiName}
+              {rule.EntityDefinition?.QualifiedApiName}
             </p>
 
             <p>
               <strong>Status:</strong>{" "}
-              {rule.Active ? "Active" : "Inactive"}
+              <span className={rule.Active ? "active" : "inactive"}>
+                {rule.Active ? "Active" : "Inactive"}
+              </span>
             </p>
 
             <p>
-              <strong>Error Message:</strong>{" "}
-              {rule.ErrorMessage}
+              <strong>Error Message:</strong> {rule.ErrorMessage}
             </p>
 
             <button
+              className={rule.Active ? "btn red small" : "btn green small"}
               onClick={() => toggleRule(rule.Id, rule.Active)}
-              style={{
-                backgroundColor: rule.Active
-                  ? "#dc3545"
-                  : "#28a745",
-                color: "white",
-                border: "none",
-                padding: "10px 18px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                marginTop: "10px",
-                fontWeight: "bold",
-                fontSize: "14px",
-              }}
             >
               {rule.Active ? "Deactivate" : "Activate"}
             </button>
-           
           </div>
         ))}
       </div>
