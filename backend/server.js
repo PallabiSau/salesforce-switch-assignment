@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
 
 app.get("/auth/login", (req, res) => {
   const url =
-    `https://login.salesforce.com/services/oauth2/authorize` +
+  `${process.env.SF_LOGIN_URL}/services/oauth2/authorize` +
     `?response_type=code` +
     `&client_id=${process.env.SALESFORCE_CLIENT_ID}` +
     `&redirect_uri=${encodeURIComponent(
@@ -57,7 +57,7 @@ app.get("/oauth/callback", async (req, res) => {
     );
 
     const response = await fetch(
-      "https://login.salesforce.com/services/oauth2/token",
+      `${process.env.SF_LOGIN_URL}/services/oauth2/token`,
       {
         method: "POST",
         headers: {
