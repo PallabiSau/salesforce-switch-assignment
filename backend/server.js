@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import jsforce from "jsforce";
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 let sfAuth = null;
+let codeVerifier = null;
 
 const getConn = () => {
   if (!sfAuth) return null;
@@ -27,16 +29,21 @@ app.get("/", (req, res) => {
 });
 
 app.get("/auth/login", (req, res) => {
+  codeVerifier = crypto.randomBytes(64).toString("hex");
+
+  const codeChallenge = crypto
+    .createHash("sha256")
+    .update(codeVerifier)
+    .digest("base64url");
+
   const url =
-  `${process.env.SF_LOGIN_URL}/services/oauth2/authorize` +
+    `${process.env.SF_LOGIN_URL}/services/oauth2/authorize` +
     `?response_type=code` +
     `&client_id=${process.env.SALESFORCE_CLIENT_ID}` +
-    `&redirect_uri=${encodeURIComponent(
-      process.env.SALESFORCE_CALLBACK_URL
-    )}` +
-    `&scope=${encodeURIComponent(
-      "api full refresh_token offline_access"
-    )}`;
+    `&redirect_uri=${encodeURIComponent(process.env.SALESFORCE_CALLBACK_URL)}` +
+    `&scope=${encodeURIComponent("api refresh_token offline_access")}` +
+    `&code_challenge=${codeChallenge}` +
+    `&code_challenge_method=S256`;
 
   res.redirect(url);
 });
@@ -45,24 +52,25 @@ app.get("/oauth/callback", async (req, res) => {
   try {
     const { code } = req.query;
 
+    if (!code) {
+      return res.send("Connection Failed: Missing authorization code");
+    }
+
     const params = new URLSearchParams();
 
     params.append("grant_type", "authorization_code");
     params.append("code", code);
     params.append("client_id", process.env.SALESFORCE_CLIENT_ID);
     params.append("client_secret", process.env.SALESFORCE_CLIENT_SECRET);
-    params.append(
-      "redirect_uri",
-      process.env.SALESFORCE_CALLBACK_URL
-    );
+    params.append("redirect_uri", process.env.SALESFORCE_CALLBACK_URL);
+    params.append("code_verifier", codeVerifier);
 
     const response = await fetch(
       `${process.env.SF_LOGIN_URL}/services/oauth2/token`,
       {
         method: "POST",
         headers: {
-          "Content-Type":
-            "application/x-www-form-urlencoded",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
         body: params,
       }
@@ -83,9 +91,7 @@ app.get("/oauth/callback", async (req, res) => {
 
     console.log("Salesforce connected successfully");
 
-    res.redirect(
-      "https://salesforce-switch-assignment.vercel.app"
-    );
+    res.redirect(process.env.FRONTEND_URL);
   } catch (error) {
     console.log("OAuth Error:", error);
     res.send("Connection Failed");
@@ -149,10 +155,7 @@ app.get("/api/validation-rules", async (req, res) => {
   }
 });
 
-const updateValidationRuleStatus = async (
-  id,
-  active
-) => {
+const updateValidationRuleStatus = async (id, active) => {
   const conn = getConn();
 
   const result = await conn.tooling.query(`
@@ -166,17 +169,15 @@ const updateValidationRuleStatus = async (
 
   const rule = result.records[0];
 
-  await conn.tooling
-    .sobject("ValidationRule")
-    .update({
-      Id: id,
-      Metadata: {
-        active,
-        validationName: rule.ValidationName,
-        errorMessage: rule.ErrorMessage,
-        validationFormula: rule.ValidationFormula,
-      },
-    });
+  await conn.tooling.sobject("ValidationRule").update({
+    Id: id,
+    Metadata: {
+      active,
+      validationName: rule.ValidationName,
+      errorMessage: rule.ErrorMessage,
+      validationFormula: rule.ValidationFormula,
+    },
+  });
 };
 
 app.patch("/api/toggle-rule/:id", async (req, res) => {
@@ -190,10 +191,7 @@ app.patch("/api/toggle-rule/:id", async (req, res) => {
       });
     }
 
-    await updateValidationRuleStatus(
-      req.params.id,
-      req.body.active
-    );
+    await updateValidationRuleStatus(req.params.id, req.body.active);
 
     res.json({
       success: true,
@@ -227,10 +225,7 @@ app.patch("/api/enable-all", async (req, res) => {
     `);
 
     for (const rule of result.records) {
-      await updateValidationRuleStatus(
-        rule.Id,
-        true
-      );
+      await updateValidationRuleStatus(rule.Id, true);
     }
 
     res.json({
@@ -265,10 +260,7 @@ app.patch("/api/disable-all", async (req, res) => {
     `);
 
     for (const rule of result.records) {
-      await updateValidationRuleStatus(
-        rule.Id,
-        false
-      );
+      await updateValidationRuleStatus(rule.Id, false);
     }
 
     res.json({
@@ -286,7 +278,5 @@ app.patch("/api/disable-all", async (req, res) => {
 });
 
 app.listen(process.env.PORT || 4000, () => {
-  console.log(
-    `Server Running on ${process.env.PORT || 4000}`
-  );
+  console.log(`Server Running on ${process.env.PORT || 4000}`);
 });
