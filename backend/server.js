@@ -45,7 +45,9 @@ app.get("/auth/login", (req, res) => {
 app.get("/oauth/callback", async (req, res) => {
   try {
     const conn = new jsforce.Connection({ oauth2 });
-    await conn.authorize(req.query.code);
+    await conn.authorize(req.query.code, {
+  grant_type: "authorization_code",
+});
 
     sfAuth = {
       accessToken: conn.accessToken,
