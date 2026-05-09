@@ -165,27 +165,23 @@ const updateValidationRuleStatus = async (id, active) => {
   const conn = getConn();
 
   const result = await conn.tooling.query(`
-    SELECT Id,
-           ValidationName,
-           ErrorMessage,
-           ValidationFormula,
-           EntityDefinitionId
+    SELECT Id, Metadata
     FROM ValidationRule
     WHERE Id = '${id}'
   `);
 
-  const rule = result.records[0];
+  if (!result.records.length) {
+    throw new Error("Validation rule not found");
+  }
 
-  const metadata = {
-    fullName: `Account.${rule.ValidationName}`,
-    active: active,
-    errorConditionFormula: rule.ValidationFormula,
-    errorMessage: rule.ErrorMessage,
-  };
+  const rule = result.records[0];
 
   await conn.tooling.sobject("ValidationRule").update({
     Id: id,
-    Metadata: metadata,
+    Metadata: {
+      ...rule.Metadata,
+      active: active,
+    },
   });
 };
 
