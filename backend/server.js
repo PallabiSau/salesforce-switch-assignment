@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 const oauth2 = new jsforce.OAuth2({
-  loginUrl: "https://login.salesforce.com",
+ loginUrl: "https://test.salesforce.com",
   clientId: process.env.SALESFORCE_CLIENT_ID,
   clientSecret: process.env.SALESFORCE_CLIENT_SECRET,
   redirectUri: process.env.SALESFORCE_CALLBACK_URL,
